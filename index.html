@@ -15,20 +15,61 @@
     .shiftBtn:hover { transform: translateY(-2px); transition: 0.2s; }
     .card { transition: 0.3s; }
     .card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+
+    .activeShift {
+    background: #2563eb !important;
+    color: white !important;
+    transform: scale(1.02);
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.35);
+}
+
+.blurOther {
+    filter: blur(1px);     /* ← LIGHT BLUR */
+    opacity: 0.7;          /* Slight dim effect */
+    transition: 0.3s;
+}
+
+
+.shift-sunday1 { background: rgba(255, 180, 180, 0.35); backdrop-filter: blur(6px); }
+.shift-sunday2 { background: rgba(255, 220, 150, 0.35); backdrop-filter: blur(6px); }
+.shift-sunday3 { background: rgba(255, 255, 150, 0.35); backdrop-filter: blur(6px); }
+
+.shift-nextweek1 { background: rgba(180, 255, 200, 0.35); backdrop-filter: blur(6px); }
+.shift-nextweek2 { background: rgba(150, 210, 255, 0.35); backdrop-filter: blur(6px); }
+.shift-nextweek3 { background: rgba(200, 180, 255, 0.35); backdrop-filter: blur(6px); }
+
+.shift-ot { background: rgba(255, 140, 255, 0.35); backdrop-filter: blur(6px); }
+.shift-vendor { background: rgba(180, 255, 255, 0.35); backdrop-filter: blur(6px); }
+
+.shift-selected {
+    border: 2px solid white;
+    scale: 1.02;
+    transition: 0.2s;
+}
+
   </style>
 </head>
 <body class="min-h-screen text-gray-800">
   <div class="max-w-4xl mx-auto p-4">
 
     <!-- Header -->
-    <header class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-700">BAJAJ AUTO CHAKAN - 1 — TRANSPORT DEPARTMENT</h1>
-      <div class="space-x-2">
-        <span id="adminBadge" class="hidden px-2 py-1 rounded bg-green-100 text-green-800 text-sm">Admin</span>
-        <button id="loginBtn" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Admin Login</button>
-        <button id="logoutBtn" class="px-3 py-1 rounded bg-gray-200 text-sm hidden">Logout</button>
-      </div>
-    </header>
+     <header class="flex items-center justify-between mb-6">
+
+  <!-- LOGO -->
+  <img src="download (1).png" alt="Bajaj Auto Logo" class="h-12 w-auto">
+
+  <!-- Title -->
+  <h1 class="text-2xl font-bold text-gray-700 text-right">
+    PLANT-1
+  </h1>
+
+  <div class="space-x-2">
+    <span id="adminBadge" class="hidden px-2 py-1 rounded bg-green-100 text-green-800 text-sm">Admin</span>
+    <button id="loginBtn" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Admin Login</button>
+    <button id="logoutBtn" class="px-3 py-1 rounded bg-gray-200 text-sm hidden">Logout</button>
+  </div>
+
+</header>
 
     <!-- Shift Buttons -->
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
@@ -179,7 +220,7 @@
   <script>
     // ----------------- FIREBASE CONFIG -----------------
     const firebaseConfig = {
-    apiKey: "AIzaSyBs8aGN5M4xER3rydVPuu_fUGwH6Z85Ios",
+   apiKey: "AIzaSyBs8aGN5M4xER3rydVPuu_fUGwH6Z85Ios",
   authDomain: "studio-6630380513-11e8c.firebaseapp.com",
   databaseURL: "https://studio-6630380513-11e8c-default-rtdb.firebaseio.com",
   projectId: "studio-6630380513-11e8c",
@@ -238,33 +279,55 @@
     function isAdmin() { const user = auth.currentUser; return user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase(); }
 
     // ----------------- SHIFT SELECTION -----------------
-    shiftButtons.forEach(btn => btn.addEventListener('click', () => {
-      const shift = btn.dataset.shift;
-      currentShift = shift;
-      shiftTitle.textContent = {
-        sunday1:'Sunday – 1st Shift', sunday2:'Sunday – 2nd Shift', sunday3:'Sunday – 3rd Shift',
-        nextweek1:'Next Week – 1st Shift', nextweek2:'Next Week – 2nd Shift', nextweek3:'Next Week – 3rd Shift',
-        ot:'OT (Overtime)', vendor:'Vendor Visit'
-      }[shift] || shift;
+  shiftButtons.forEach(btn => btn.addEventListener('click', () => {
 
-      db.ref('shifts/' + shift + '/supervisor').on('value', snap => {
-        const sup = snap.val();
-        if(sup && (sup.name || sup.phone)) {
-          supervisorArea.classList.remove('hidden');
-          supervisorText.textContent = (sup.name||'') + (sup.phone ? ' • '+sup.phone:'');
-          supervisorCall.href = telLink(sup.phone||'');
-        } else supervisorArea.classList.add('hidden');
-      });
+  // Remove active + blur from all
+   shiftButtons.forEach(b => {
+      b.classList.remove('activeShift');
+      b.classList.remove('blurOther');
+      b.classList.remove(
+        'shift-sunday1','shift-sunday2','shift-sunday3',
+        'shift-nextweek1','shift-nextweek2','shift-nextweek3',
+        'shift-ot','shift-vendor'
+      );
+  });
 
-      db.ref('shifts/' + shift + '/entries').on('value', snap => {
-        const data = snap.val() || {};
-        currentEntries = data;
-        renderEntriesTable(data);
-      });
+  // Add active class
+  btn.classList.add('activeShift');
+  btn.classList.add('shift-' + btn.dataset.shift);  // ← APPLY SPECIFIC COLOR
 
-      entriesTable.classList.remove('hidden');
-      emptyMsg.classList.add('hidden');
-    }));
+  // Blur others
+  shiftButtons.forEach(b => {
+      if (b !== btn) b.classList.add('blurOther');
+  });
+
+  // Continue your existing code
+  const shift = btn.dataset.shift;
+  currentShift = shift;
+  shiftTitle.textContent = {
+    sunday1:'Sunday – 1st Shift', sunday2:'Sunday – 2nd Shift', sunday3:'Sunday – 3rd Shift',
+    nextweek1:'Next Week – 1st Shift', nextweek2:'Next Week – 2nd Shift', nextweek3:'Next Week – 3rd Shift',
+    ot:'OT (Overtime)', vendor:'Vendor Visit'
+  }[shift] || shift;
+
+  db.ref('shifts/' + shift + '/supervisor').on('value', snap => {
+    const sup = snap.val();
+    if(sup && (sup.name || sup.phone)) {
+      supervisorArea.classList.remove('hidden');
+      supervisorText.textContent = (sup.name||'') + (sup.phone ? ' • '+sup.phone:'' );
+      supervisorCall.href = telLink(sup.phone||'');
+    } else supervisorArea.classList.add('hidden');
+  });
+
+  db.ref('shifts/' + shift + '/entries').on('value', snap => {
+    const data = snap.val() || {};
+    currentEntries = data;
+    renderEntriesTable(data);
+  });
+
+  entriesTable.classList.remove('hidden');
+  emptyMsg.classList.add('hidden');
+}));
 
     function renderEntriesTable(data){
       entriesBody.innerHTML = '';
@@ -351,9 +414,12 @@
 
     // Auto-select first shift
     (function(){ const first = document.querySelector('.shiftBtn'); if(first) first.click(); })();
+    
   </script>
+
+  
+  
 </body>
 
 </html>
-
 
